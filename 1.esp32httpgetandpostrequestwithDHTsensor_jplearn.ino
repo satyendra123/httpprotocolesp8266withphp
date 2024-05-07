@@ -14,8 +14,8 @@ DHT dht(DHT_PIN, DHT_TYPE);
 const char* ssid = "Your SSID";
 const char* password = "Your Password";
 
-String HTTPS_POST_URL = "Your HTTPS Post URL";
-String HTTPS_GET_URL = "Your HTTPS Get URL";
+String HTTPS_POST_URL = "http://127.0.0.1:8000/esp32/api/sensor-data/";
+String HTTPS_GET_URL = "http://127.0.0.1:8000/esp32/get_sensor_data/";
 
 WiFiClientSecure client;
 HTTPClient https;
