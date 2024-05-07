@@ -119,3 +119,92 @@ void HTTPS_POST(String HTTPS_POST_URL, String PostPacket) {
     Serial.print("Failed to connect to server");
   https.end();
 }
+
+  /* python django code views.py code
+  
+  from django.shortcuts import render
+
+# Create your views here.
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import SensorData
+from .serializers import SensorDataSerializer
+
+@api_view(['POST'])
+def sensor_data_view(request):
+    serializer = SensorDataSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_sensor_data(request):
+    sensor_data = SensorData.objects.all()
+    serializer = SensorDataSerializer(sensor_data, many=True)
+    return Response(serializer.data)
+
+step-2 urls.py code
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('api/sensor-data/', views.sensor_data_view, name='sensor_data_view'),
+    path('get_sensor_data/', views.get_sensor_data, name='get_sensor_data'),
+]
+
+Step-3 main urls.py code
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('esp32/', include('esp32_api.urls')),  # Include esp32_api urls
+    path('student/', include('StudentApp.urls')),  # Include StudentApp urls
+]
+
+Step-4 models.py code
+from django.db import models
+
+# Create your models here.
+
+class SensorData(models.Model):
+    device_id = models.CharField(max_length=50)
+    sensor_type = models.CharField(max_length=50)
+    value = models.FloatField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.device_id} - {self.sensor_type}"
+
+Step-5 this is serializers.py code
+
+'''
+from rest_framework import serializers
+class SensorData(serializers.Serializer):
+    device_id = serializers.CharField(max_length=50)
+    sensor_type = serializers.CharField(max_length=50)
+    value = serializers.FloatField()
+    timestamp = serializers.DateTimeField(auto_now_add=True)
+'''
+
+from rest_framework import serializers
+from .models import SensorData
+
+class SensorDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SensorData
+        fields = '__all__'
+    
+Step-6 this is apps.py code
+
+from django.apps import AppConfig
+
+
+class Esp32ApiConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'esp32_api'
+
+  */
