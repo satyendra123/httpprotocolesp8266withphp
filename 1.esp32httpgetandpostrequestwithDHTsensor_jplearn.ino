@@ -295,3 +295,15 @@ class Esp32ApiConfig(AppConfig):
     name = 'esp32_api'
 
   */
+/* this is for the get the sensor data 
+get_response = http://127.0.0.1:8000/esp32/get_sensor_data/
+post_response = http://127.0.0.1:8000/esp32/api/sensor-data/     raw_data = { "device_id": "001", "sensor_type": "temperature", "value": 25.5 }
+
+#this is the api request for the StudentApp
+post_response = http://localhost:8000/student/insert/        raw_data = { "name": "John Doe", "address": "123 Main St", "fee": 5000 }
+get_response = http://localhost:8000/student/view/
+PUT_response = http://localhost:8000/student/update/4/        raw_data = { "name": "satyendra", "address": "123 Main St", "fee": 5000 }
+DELETE_response = http://localhost:8000/student/delete/8/
+
+
+*/
