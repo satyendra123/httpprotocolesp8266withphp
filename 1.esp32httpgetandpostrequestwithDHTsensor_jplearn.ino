@@ -120,10 +120,97 @@ void HTTPS_POST(String HTTPS_POST_URL, String PostPacket) {
   https.end();
 }
 
-  /* python django code views.py code
-  
-  from django.shortcuts import render
+/* 
+python manage.py createapp SchoolProject
+cd SchoolProject
+python manage.py startapp StudentApp
+python manage.py startapp esp32_api
 
+step-0 'corsheaders', 'rest_framework', 'StudentApp.apps.StudentappConfig', 'esp32_api.apps.Esp32ApiConfig', DATABASES = { 'default': { 'ENGINE': 'django.db.backends.mysql', 'NAME': 'sms','USER': 'root', 'PASSWORD': '',} }
+        CORS_ORIGIN_ALLOW_ALL = True
+        CORS_ALLOW_ALL_HEADERS=True
+
+#this all is for the application StudentApp
+Step-1 this is apps.py code
+
+from django.apps import AppConfig
+class StudentappConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'StudentApp'
+
+Step-2 this is models.py code
+from django.db import models
+
+# Create your models here.
+class Student(models.Model):
+    name = models.CharField(max_length = 255)
+    address = models.CharField(max_length = 255)
+    fee = models.IntegerField()
+
+Step-3 this is serializers.py
+from rest_framework import serializers
+from StudentApp.models import Student
+
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = '__all__'
+
+Step-4 this is urls.py code
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('insert/', views.studentApi),
+    path('view/', views.studentApi),
+    path('delete/<int:id>/', views.studentApi),
+    path('update/<int:id>/', views.studentApi),
+    # Add other URL patterns specific to the StudentApp app here
+]
+Step-5 this is views.py file
+from django.shortcuts import render
+
+# Create your views here.
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.parsers import JSONParser
+from django.http.response import JsonResponse
+from StudentApp.serializers import StudentSerializer
+from StudentApp.models import Student
+
+@csrf_exempt
+def studentApi(request,id=0):
+    if request.method=='GET':
+        student = Student.objects.all()
+        student_serializer=StudentSerializer(student,many=True)
+        return JsonResponse(student_serializer.data,safe=False)
+    elif request.method=='POST':
+        student_data=JSONParser().parse(request)
+        student_serializer=StudentSerializer(data=student_data)
+        if student_serializer.is_valid():
+            student_serializer.save()
+            return JsonResponse("Added Successfully",safe=False)
+        return JsonResponse("Failed to Add",safe=False)
+    elif request.method=='PUT':
+        student_data=JSONParser().parse(request)
+        student=Student.objects.get(id=id)
+        student_serializer=StudentSerializer(student,data=student_data)
+        if student_serializer.is_valid():
+            student_serializer.save()
+            return JsonResponse("Updated Successfully",safe=False)
+        return JsonResponse("Failed to Update")
+    elif request.method=='DELETE':
+        student=Student.objects.get(id=id)
+        student.delete()
+        return JsonResponse("Deleted Successfully",safe=False)
+
+
+
+
+#this all is for the application esp32_api
+Step-1 python django code views.py code
+
+from django.shortcuts import render
 # Create your views here.
 from rest_framework import status
 from rest_framework.decorators import api_view
