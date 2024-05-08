@@ -1,3 +1,95 @@
+#same code with esp32 micropython for http post
+from machine import Pin
+from time import sleep
+import network
+import urequests as requests
+import ujson as json
+
+device_id = "Device0001"
+ssid = "Airtel_tejv_3002"
+password = "air73137"
+
+DHT_Temperature = 22.4
+DHT_Humidity = 34
+
+HTTPS_POST_URL = "http://192.168.1.16:1880/update-sensor/"
+HTTPS_GET_URL = "http://192.168.1.16:1880/get-sensor/"
+
+LED_PIN = 2 # GPIO 2 for the built-in LED
+
+def setup():
+    global led
+    led = Pin(LED_PIN, Pin.OUT)
+    setup_wifi()
+
+def loop():
+    jsonTemperature = {
+        "device_id": device_id,
+        "type": "Temperature",
+        "value": DHT_Temperature
+    }
+
+    pkt = json.dumps(jsonTemperature)
+
+    HTTPS_POST(HTTPS_POST_URL, pkt)
+
+    jsonHumidity = {
+        "device_id": device_id,
+        "type": "Humidity",
+        "value": DHT_Humidity
+    }
+
+    pkt2 = json.dumps(jsonHumidity)
+
+    HTTPS_POST(HTTPS_POST_URL, pkt2)
+
+    HTTPS_GET(HTTPS_GET_URL)
+
+    sleep(1)
+
+def setup_wifi():
+    sta_if = network.WLAN(network.STA_IF)
+    if not sta_if.isconnected():
+        print('Connecting to network...')
+        sta_if.active(True)
+        sta_if.connect(ssid, password)
+        while not sta_if.isconnected():
+            pass
+    print('Network config:', sta_if.ifconfig())
+
+def HTTPS_POST(HTTPS_POST_URL, PostPacket):
+    print("\nPosting to:", HTTPS_POST_URL)
+    print("PostPacket:", PostPacket)
+
+    print("Connecting to server...")
+    response = requests.post(HTTPS_POST_URL, data=PostPacket)
+    if response.status_code == 200:
+        print("ServerResponse:", response.text)
+        jsonResponse = json.loads(response.text)
+        if jsonResponse["relay"] == "OPENEN":
+            led.on()
+            sleep(1)
+            led.off()
+    else:
+        print("Failed to POST. Error:", response.text)
+
+def HTTPS_GET(HTTPS_GET_URL):
+    print("\nGetting from:", HTTPS_GET_URL)
+
+    print("Connecting to server...")
+    response = requests.get(HTTPS_GET_URL)
+    if response.status_code == 200:
+        print("ServerResponse:", response.text)
+    else:
+        print("Failed to GET. Error:", response.text)
+
+setup()
+while True:
+    loop()
+
+
+
+
 //EXAMPLE-1 in this we are using the arduinojson library for sending the pkt. this is our code and this is working also builtin led is turned on
 //isme humne do response send kiya hai. agar relay: openen and message:success but we will only read the relay. and if it is OPENEN then turn on the relay
 #include <WiFi.h>
