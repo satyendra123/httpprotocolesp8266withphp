@@ -1,4 +1,4 @@
-#same code with esp32 micropython for http post
+// this is the working code for http post request in esp32 in micropython. and this code is in working condition. it sends the back the response in json format. and when relay: OPENEN is getting in the response the builtin led will be turned on
 from machine import Pin
 from time import sleep
 import network
@@ -29,9 +29,7 @@ def loop():
         "value": DHT_Temperature
     }
 
-    pkt = json.dumps(jsonTemperature)
-
-    HTTPS_POST(HTTPS_POST_URL, pkt)
+    HTTPS_POST(HTTPS_POST_URL, jsonTemperature)
 
     jsonHumidity = {
         "device_id": device_id,
@@ -39,9 +37,7 @@ def loop():
         "value": DHT_Humidity
     }
 
-    pkt2 = json.dumps(jsonHumidity)
-
-    HTTPS_POST(HTTPS_POST_URL, pkt2)
+    HTTPS_POST(HTTPS_POST_URL, jsonHumidity)
 
     HTTPS_GET(HTTPS_GET_URL)
 
@@ -57,38 +53,127 @@ def setup_wifi():
             pass
     print('Network config:', sta_if.ifconfig())
 
-def HTTPS_POST(HTTPS_POST_URL, PostPacket):
+def HTTPS_POST(HTTPS_POST_URL, data):
     print("\nPosting to:", HTTPS_POST_URL)
-    print("PostPacket:", PostPacket)
+    print("PostPacket:", data)
 
     print("Connecting to server...")
-    response = requests.post(HTTPS_POST_URL, data=PostPacket)
-    if response.status_code == 200:
-        print("ServerResponse:", response.text)
-        jsonResponse = json.loads(response.text)
-        if jsonResponse["relay"] == "OPENEN":
-            led.on()
-            sleep(1)
-            led.off()
-    else:
-        print("Failed to POST. Error:", response.text)
+    try:
+        response = requests.post(HTTPS_POST_URL, json=data)
+        if response.status_code == 200:
+            print("ServerResponse:", response.text)
+            jsonResponse = response.json()
+            if jsonResponse.get("relay") == "OPENEN":
+                led.on()
+                sleep(1)
+                led.off()
+        else:
+            print("Failed to POST. Error:", response.text)
+    except Exception as e:
+        print("Exception occurred:", e)
+
 
 def HTTPS_GET(HTTPS_GET_URL):
     print("\nGetting from:", HTTPS_GET_URL)
 
     print("Connecting to server...")
-    response = requests.get(HTTPS_GET_URL)
-    if response.status_code == 200:
-        print("ServerResponse:", response.text)
-    else:
-        print("Failed to GET. Error:", response.text)
+    try:
+        response = requests.get(HTTPS_GET_URL)
+        if response.status_code == 200:
+            print("ServerResponse:", response.text)
+        else:
+            print("Failed to GET. Error:", response.text)
+    except Exception as e:
+        print("Exception occurred:", e)
 
 setup()
 while True:
     loop()
 
+# this is the code for the raspberry pi with same working process
+import RPi.GPIO as GPIO
+import time
+import requests
+import json
 
+device_id = "Device0001"
+ssid = "Airtel_tejv_3002"
+password = "air73137"
 
+DHT_Temperature = 22.4
+DHT_Humidity = 34
+
+HTTPS_POST_URL = "http://192.168.1.16:1880/update-sensor/"
+HTTPS_GET_URL = "http://192.168.1.16:1880/get-sensor/"
+
+LED_PIN = 2 # GPIO 2 for the built-in LED
+
+def setup():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(LED_PIN, GPIO.OUT)
+    setup_wifi()
+
+def loop():
+    jsonTemperature = {
+        "device_id": device_id,
+        "type": "Temperature",
+        "value": DHT_Temperature
+    }
+
+    HTTPS_POST(HTTPS_POST_URL, jsonTemperature)
+
+    jsonHumidity = {
+        "device_id": device_id,
+        "type": "Humidity",
+        "value": DHT_Humidity
+    }
+
+    HTTPS_POST(HTTPS_POST_URL, jsonHumidity)
+
+    HTTPS_GET(HTTPS_GET_URL)
+
+    time.sleep(1)
+
+def setup_wifi():
+    # You'll need to implement WiFi setup for Raspberry Pi.
+    # This can be done using the `wifi` or `wpa_supplicant` libraries in Python.
+    pass
+
+def HTTPS_POST(HTTPS_POST_URL, data):
+    print("\nPosting to:", HTTPS_POST_URL)
+    print("PostPacket:", data)
+
+    print("Connecting to server...")
+    try:
+        response = requests.post(HTTPS_POST_URL, json=data)
+        if response.status_code == 200:
+            print("ServerResponse:", response.text)
+            jsonResponse = response.json()
+            if jsonResponse.get("relay") == "OPENEN":
+                GPIO.output(LED_PIN, GPIO.HIGH)
+                time.sleep(1)
+                GPIO.output(LED_PIN, GPIO.LOW)
+        else:
+            print("Failed to POST. Error:", response.text)
+    except Exception as e:
+        print("Exception occurred:", e)
+
+def HTTPS_GET(HTTPS_GET_URL):
+    print("\nGetting from:", HTTPS_GET_URL)
+
+    print("Connecting to server...")
+    try:
+        response = requests.get(HTTPS_GET_URL)
+        if response.status_code == 200:
+            print("ServerResponse:", response.text)
+        else:
+            print("Failed to GET. Error:", response.text)
+    except Exception as e:
+        print("Exception occurred:", e)
+
+setup()
+while True:
+    loop()
 
 //EXAMPLE-1 in this we are using the arduinojson library for sending the pkt. this is our code and this is working also builtin led is turned on
 //isme humne do response send kiya hai. agar relay: openen and message:success but we will only read the relay. and if it is OPENEN then turn on the relay
@@ -462,191 +547,3 @@ def update_sensor():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=1880)
-
-/* 
-python manage.py createapp SchoolProject
-cd SchoolProject
-python manage.py startapp StudentApp
-python manage.py startapp esp32_api
-
-step-0 'corsheaders', 'rest_framework', 'StudentApp.apps.StudentappConfig', 'esp32_api.apps.Esp32ApiConfig', DATABASES = { 'default': { 'ENGINE': 'django.db.backends.mysql', 'NAME': 'sms','USER': 'root', 'PASSWORD': '',} }
-        CORS_ORIGIN_ALLOW_ALL = True
-        CORS_ALLOW_ALL_HEADERS=True
-
-#this all is for the application StudentApp
-Step-1 this is apps.py code
-
-from django.apps import AppConfig
-class StudentappConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'StudentApp'
-
-Step-2 this is models.py code
-from django.db import models
-
-# Create your models here.
-class Student(models.Model):
-    name = models.CharField(max_length = 255)
-    address = models.CharField(max_length = 255)
-    fee = models.IntegerField()
-
-Step-3 this is serializers.py
-from rest_framework import serializers
-from StudentApp.models import Student
-
-class StudentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Student
-        fields = '__all__'
-
-Step-4 this is urls.py code
-
-from django.urls import path
-from . import views
-
-urlpatterns = [
-    path('insert/', views.studentApi),
-    path('view/', views.studentApi),
-    path('delete/<int:id>/', views.studentApi),
-    path('update/<int:id>/', views.studentApi),
-    # Add other URL patterns specific to the StudentApp app here
-]
-Step-5 this is views.py file
-from django.shortcuts import render
-
-# Create your views here.
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
-from django.http.response import JsonResponse
-from StudentApp.serializers import StudentSerializer
-from StudentApp.models import Student
-
-@csrf_exempt
-def studentApi(request,id=0):
-    if request.method=='GET':
-        student = Student.objects.all()
-        student_serializer=StudentSerializer(student,many=True)
-        return JsonResponse(student_serializer.data,safe=False)
-    elif request.method=='POST':
-        student_data=JSONParser().parse(request)
-        student_serializer=StudentSerializer(data=student_data)
-        if student_serializer.is_valid():
-            student_serializer.save()
-            return JsonResponse("Added Successfully",safe=False)
-        return JsonResponse("Failed to Add",safe=False)
-    elif request.method=='PUT':
-        student_data=JSONParser().parse(request)
-        student=Student.objects.get(id=id)
-        student_serializer=StudentSerializer(student,data=student_data)
-        if student_serializer.is_valid():
-            student_serializer.save()
-            return JsonResponse("Updated Successfully",safe=False)
-        return JsonResponse("Failed to Update")
-    elif request.method=='DELETE':
-        student=Student.objects.get(id=id)
-        student.delete()
-        return JsonResponse("Deleted Successfully",safe=False)
-
-
-
-
-#this all is for the application esp32_api
-Step-1 python django code views.py code
-
-from django.shortcuts import render
-# Create your views here.
-from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from .models import SensorData
-from .serializers import SensorDataSerializer
-
-@api_view(['POST'])
-def sensor_data_view(request):
-    serializer = SensorDataSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET'])
-def get_sensor_data(request):
-    sensor_data = SensorData.objects.all()
-    serializer = SensorDataSerializer(sensor_data, many=True)
-    return Response(serializer.data)
-
-step-2 urls.py code
-
-from django.urls import path
-from . import views
-
-urlpatterns = [
-    path('api/sensor-data/', views.sensor_data_view, name='sensor_data_view'),
-    path('get_sensor_data/', views.get_sensor_data, name='get_sensor_data'),
-]
-
-Step-3 main urls.py code
-from django.contrib import admin
-from django.urls import path, include
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('esp32/', include('esp32_api.urls')),  # Include esp32_api urls
-    path('student/', include('StudentApp.urls')),  # Include StudentApp urls
-]
-
-Step-4 models.py code
-from django.db import models
-
-# Create your models here.
-
-class SensorData(models.Model):
-    device_id = models.CharField(max_length=50)
-    sensor_type = models.CharField(max_length=50)
-    value = models.FloatField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.device_id} - {self.sensor_type}"
-
-Step-5 this is serializers.py code
-
-'''
-from rest_framework import serializers
-class SensorData(serializers.Serializer):
-    device_id = serializers.CharField(max_length=50)
-    sensor_type = serializers.CharField(max_length=50)
-    value = serializers.FloatField()
-    timestamp = serializers.DateTimeField(auto_now_add=True)
-'''
-
-from rest_framework import serializers
-from .models import SensorData
-
-class SensorDataSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SensorData
-        fields = '__all__'
-    
-Step-6 this is apps.py code
-
-from django.apps import AppConfig
-
-
-class Esp32ApiConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'esp32_api'
-
-  */
-/* this is for the get the sensor data 
-get_response = http://127.0.0.1:8000/esp32/get_sensor_data/
-post_response = http://127.0.0.1:8000/esp32/api/sensor-data/     raw_data = { "device_id": "001", "sensor_type": "temperature", "value": 25.5 }
-
-#this is the api request for the StudentApp
-post_response = http://localhost:8000/student/insert/        raw_data = { "name": "John Doe", "address": "123 Main St", "fee": 5000 }
-get_response = http://localhost:8000/student/view/
-PUT_response = http://localhost:8000/student/update/4/        raw_data = { "name": "satyendra", "address": "123 Main St", "fee": 5000 }
-DELETE_response = http://localhost:8000/student/delete/8/
-
-
-*/
